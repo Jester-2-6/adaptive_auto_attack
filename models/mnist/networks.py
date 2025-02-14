@@ -1,5 +1,5 @@
 import torch.nn as nn
-from models.mnist.cw.torch_mod import memLinear, memConv2d, memRelu
+from LUTorch.nn import memLinear, memConv2d, memReLu
 from models.mnist.cw.lis_to_lut import get_mapped_lut
 
 DEFAULT_LUT_PATH = "outputs/lut_builder/luts/"
@@ -29,7 +29,7 @@ class LeNet(nn.Module):
     def __init__(self):
         super(LeNet, self).__init__()
         self.conv1 = nn.Conv2d(1, 6, 5)
-        self.relu = memRelu()
+        self.relu = memReLu()
         self.pool = nn.MaxPool2d(2, 2)
         self.conv2 = nn.Conv2d(6, 16, 5)
         self.fc1 = nn.Linear(16 * 4 * 4, 120)
@@ -58,7 +58,7 @@ class LeNet_no_split(nn.Module):
     def __init__(self):
         super(LeNet_no_split, self).__init__()
         self.conv1 = nn.Conv2d(1, 6, 5)
-        self.relu = memRelu()
+        self.relu = memReLu()
         self.pool = nn.MaxPool2d(2, 2)
         self.conv2 = nn.Conv2d(6, 16, 5)
         self.fc1 = nn.Linear(16 * 4 * 4, 120)
@@ -87,7 +87,7 @@ class LeNetMem(nn.Module):
     def __init__(self, lut):
         super(LeNetMem, self).__init__()
         self.conv1 = memConv2d(1, 6, 5, lut)
-        self.relu = memRelu()
+        self.relu = memReLu()
         self.pool = nn.MaxPool2d(2, 2)
         self.conv2 = memConv2d(6, 16, 5, lut)
         self.fc1 = memLinear(16 * 4 * 4, 120, lut)
@@ -115,7 +115,7 @@ class LeNetMem(nn.Module):
 class CifarNet(nn.Module):
     def __init__(self):
         super(CifarNet, self).__init__()
-        self.relu = memRelu()
+        self.relu = memReLu()
         self.pool = nn.MaxPool2d(2, 2)
         self.conv1 = nn.Conv2d(3, 32, 3, padding=1)
         self.conv2 = nn.Conv2d(32, 32, 3, padding=1)
@@ -157,7 +157,7 @@ class CifarNet(nn.Module):
 class CifarNet_no_split(nn.Module):
     def __init__(self):
         super(CifarNet_no_split, self).__init__()
-        self.relu = memRelu()
+        self.relu = memReLu()
         self.pool = nn.MaxPool2d(2, 2)
         self.conv1 = nn.Conv2d(3, 32, 3, padding=1)
         self.conv2 = nn.Conv2d(32, 32, 3, padding=1)
@@ -167,7 +167,7 @@ class CifarNet_no_split(nn.Module):
         self.conv6 = nn.Conv2d(128, 128, 3, padding=1)
         self.fc1 = nn.Linear(128 * 4 * 4, 512)
         self.fc2 = nn.Linear(512, 128)
-        self.fc3 = nn.Linear(128, 100)
+        self.fc3 = nn.Linear(128, 10)
         self.softmax = nn.Softmax(dim=1)
 
     def forward(self, x):
@@ -199,7 +199,7 @@ class CifarNet_no_split(nn.Module):
 class CifarNetMem(nn.Module):
     def __init__(self, lut):
         super(CifarNetMem, self).__init__()
-        self.relu = memRelu()
+        self.relu = memReLu()
         self.pool = nn.MaxPool2d(2, 2)
         self.conv1 = memConv2d(3, 32, 3, lut, padding=1)
         self.conv2 = memConv2d(32, 32, 3, lut, padding=1)
@@ -232,16 +232,16 @@ class CifarNetMem(nn.Module):
         x = self.fc1(x)
         x = self.relu(x)
         x = self.fc2(x)
-        fc2 = self.relu(x)
-        x = self.fc3(fc2)
+        x = self.relu(x)
+        x = self.fc3(x)
         x = self.softmax(x)
-        return x, fc2
+        return x
 
 
 class CifarNetPlusNoSplit(nn.Module):
     def __init__(self):
         super(CifarNetPlusNoSplit, self).__init__()
-        self.relu = memRelu()
+        self.relu = memReLu()
         self.pool = nn.MaxPool2d(2, 2)
         self.conv1 = nn.Conv2d(3, 128, 3, padding=1)
         self.conv2 = nn.Conv2d(128, 128, 3, padding=1)
@@ -286,7 +286,7 @@ class CifarNetPlusNoSplit(nn.Module):
 class CifarNetPlus(nn.Module):
     def __init__(self):
         super(CifarNetPlus, self).__init__()
-        self.relu = memRelu()
+        self.relu = memReLu()
         self.pool = nn.MaxPool2d(2, 2)
         self.conv1 = nn.Conv2d(3, 128, 3, padding=1)
         self.conv2 = nn.Conv2d(128, 128, 3, padding=1)
@@ -331,7 +331,7 @@ class CifarNetPlus(nn.Module):
 class CifarNetPlusMem(nn.Module):
     def __init__(self, lut):
         super(CifarNetPlusMem, self).__init__()
-        self.relu = memRelu()
+        self.relu = memReLu()
         self.pool = nn.MaxPool2d(2, 2)
         self.conv1 = memConv2d(3, 128, 3, lut, padding=1)
         self.conv2 = memConv2d(128, 128, 3, lut, padding=1)

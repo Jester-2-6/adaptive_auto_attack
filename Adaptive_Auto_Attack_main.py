@@ -287,7 +287,10 @@ def AAA_white_box(
         tbn += X_adv_f.shape[0]
         if i < ADI_step_num:
             if Lnorm == "Linf":
-                eta = epsilon * X_adv_f.grad.data.sign()
+                if X_adv_f.grad is None:
+                    eta = torch.zeros_like(X_adv_f)
+                else:
+                    eta = epsilon * X_adv_f.grad.data.sign()
             elif Lnorm == "L2":
                 eta = epsilon * normalize_x(X_adv_f.grad.data)
         else:
@@ -310,7 +313,10 @@ def AAA_white_box(
                 / 2
             )
             if Lnorm == "Linf":
-                eta = step_size * X_adv_f.grad.data.sign()
+                if X_adv_f.grad is None:
+                    eta = torch.zeros_like(X_adv_f)
+                else:
+                    eta = step_size * X_adv_f.grad.data.sign()
             elif Lnorm == "L2":
                 eta = step_size * normalize_x(X_adv_f.grad.data)
         X_adv_f = X_adv_f.data + eta
@@ -672,6 +678,19 @@ def Adaptive_Auto_white_box_attack(
                         Lnorm=Lnorm,
                         out_re=out_re,
                     )
+
+                    # print(X_pgd.shape)
+                    # if i < 5:
+                    #     img = X_pgd[0].cpu().detach().numpy().squeeze()
+                    #     # img = (img * 255).astype(np.uint8)
+                    #     img = Image.fromarray(img)
+                    #     img.save(f'img/x_pgd__{r}_{i}.jpg')
+
+                    #     img = X[0].cpu().detach().numpy().squeeze()
+                    #     # img = (img * 255).astype(np.uint8)
+                    #     img = Image.fromarray(img)
+                    #     img.save(f'img/x__{r}_{i}.jpg')
+
                     now_need_atk_index[bstart:bend] = (
                         now_need_atk_index[bstart:bend] * atk_filed_index_cold
                     )
@@ -1549,14 +1568,36 @@ def main(
 
     if model_name == "cw_lenet":
         data_set = "mnist"
-        from models.mnist.networks import LeNetMem
+        from models.mnist.networks import LeNetMem, LeNet_no_split
 
         lut = get_mapped_lut().to("cuda")
         model = LeNetMem(lut)
+        # model = LeNet_no_split()
         model.load_state_dict(torch.load("model_weights/lenet_mnist.pth"))
         model = torch.nn.DataParallel(model)
         batch_size = 128
-        ep = 0.3
+        ep = 0.1
+
+    if model_name == "cw_cifar":
+        data_set = "cifar10"
+        from models.mnist.networks import CifarNetMem
+
+        lut = get_mapped_lut().to("cuda")
+        model = CifarNetMem(lut)
+        model = torch.nn.DataParallel(model)
+        model.load_state_dict(torch.load("model_weights/cifarnet.h5"))
+        batch_size = 16
+        ep = 0.03
+
+    if model_name == "cw_comp":
+        data_set = "cifar10"
+        from models.CIFAR10.resnet import ResNet101Comp
+
+        model = ResNet101Comp()
+        model = torch.nn.DataParallel(model)
+        model.load_state_dict(torch.load("model_weights/resnet_101_comp.h5"))
+        batch_size = 16
+        ep = 0.03
 
     model.to("cuda")
     model.eval()
@@ -1649,6 +1690,7 @@ if __name__ == "__main__":
     # main('AAA',model_name="ULAT_mnist", average_number=1000)
     # main('AAA',model_name="Standard_imagenet", average_number=1000)
     # main('AAA',model_name="robustness_imagenet", average_number=1000)
-    
 
-    main("cw", model_name="cw_lenet", average_number=1000)
+    # main("cw", model_name="cw_lenet", average_number=1000)
+    # main("cw", model_name="cw_cifar", average_number=1000)
+    main("cw", model_name="cw_comp", average_number=1000)
