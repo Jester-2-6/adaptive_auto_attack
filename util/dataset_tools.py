@@ -9,6 +9,7 @@ import torch.nn as nn
 import torchvision
 import torch
 from torchvision import transforms
+import csv
 
 EPOCHS = 200
 LEARNING_RATE = 0.01
@@ -190,6 +191,46 @@ def test(model, test_loader, parellel=False):
     return accuracy, test_loss
 
 
+def test_and_dump(model, test_loader, parellel=False, name="unnamed_test"):
+    # Test the model
+    criterion = nn.CrossEntropyLoss()
+    test_loss = 0
+    correct = 0
+    total = 0
+    logits_all = []
+
+    with torch.no_grad():
+        for data, target in tqdm.tqdm(test_loader):
+            if parellel:
+                data = data.to(device)
+                target = target.to(device)
+            else:
+                data = data.to("cpu")
+                target = target.to("cpu")
+
+            output, logits = model(data)
+            logits_all.extend(logits)
+
+            test_loss += criterion(output, target).item()
+            _, predicted = torch.max(output.data, 1)
+            total += target.size(0)
+            correct += (predicted == target).sum().item()
+
+    # Open a CSV file to write the logits
+    with open(f"{name}.csv", mode="w") as file:
+        writer = csv.writer(file)
+        writer.writerow(["logits"])
+        for logit in logits_all:
+            writer.writerow(logit.cpu().numpy().tolist())
+
+    test_loss /= len(test_loader.dataset)
+    accuracy = 100 * correct / total
+
+    torch.cuda.empty_cache()
+
+    return accuracy, test_loss
+
+
 def save_model(model, path):
     torch.save(model.state_dict(), path)
 
@@ -208,12 +249,12 @@ def augment_img(img: torch.Tensor, noise: float):
     return np.array(np.clip(img, 0, 1), dtype=np.float32)
 
 
-def augment_set(x, y, length):
+def augment_set(x, y, length, noise=0.002):
     x_aug, y_aug = [], []
 
     for i in range(len(x)):
         for j in range(length):
-            x_aug.append(augment_img(x[i], 0.002))
+            x_aug.append(augment_img(x[i], noise))
             y_aug.append(y[i])
 
     return np.array(x_aug), np.array(y_aug)
@@ -230,3 +271,16 @@ def remove_data_parallel(model):
     model.load_state_dict(new_state_dict)
 
     return model
+
+
+def loader_to_xy(loader):
+    x, y = [], []
+    for data, target in loader:
+        x.extend(data)
+        y.extend(target)
+    return torch.stack(x), torch.stack(y)
+
+
+def xy_to_loader(x, y, batch_size=64):
+    dataset = torch.utils.data.TensorDataset(torch.tensor(x), torch.tensor(y))
+    return torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=False)

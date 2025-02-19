@@ -113,11 +113,12 @@ class ResNet(nn.Module):
 
 
 class ResNetComp(nn.Module):
-    def __init__(self, block, num_blocks, num_classes=10, jpeg_quality=50, enable_compression=True):
+    def __init__(self, block, num_blocks, num_classes=10, jpeg_quality=50, enable_compression=True, dump_logits=False):
         super(ResNetComp, self).__init__()
         self.in_planes = 64
         self.jpeg_quality = jpeg_quality
         self.enable_compression = enable_compression
+        self.dump_logits = dump_logits
 
         self.conv1 = nn.Conv2d(3, 64, kernel_size=3, stride=1, padding=1, bias=False)
         self.bn1 = nn.BatchNorm2d(64)
@@ -147,9 +148,9 @@ class ResNetComp(nn.Module):
         out = self.layer3(out)
         out = self.layer4(out)
         out = F.avg_pool2d(out, 4)
-        out = out.view(out.size(0), -1)
-        out = self.linear(out)
-        return out
+        out_logits = out.view(out.size(0), -1)
+        out = self.linear(out_logits)
+        return (out, out_logits)
 
 
 def ResNet18():
